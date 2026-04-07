@@ -25,7 +25,7 @@ A configurable logic gate that manages the client journey through two distinct m
 
 ## Tech Stack
 
-* **Frontend:** [Vite.js](https://vite.dev/) (App Router) & [TypeScript](https://www.typescriptlang.org/)
+* **Frontend:** [Vite.js](https://vite.dev/) & [TypeScript](https://www.typescriptlang.org/)
 * **Backend:** [Node.js](https://nodejs.org/) logic layer
 * **Database:** [Supabase](https://supabase.com/) / PostgreSQL
 * **Styling:** [Tailwind CSS](https://tailwindcss.com/) with Dynamic CSS Variables

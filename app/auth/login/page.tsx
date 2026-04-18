@@ -1,38 +1,55 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { useAuth } from '@/lib/providers'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Spinner } from '@/components/ui/spinner'
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useAuth } from "@/lib/providers";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const { signIn } = useAuth()
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const { signIn } = useAuth();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
-    setIsLoading(true)
+    e.preventDefault();
+    setError(null);
+    setIsLoading(true);
 
-    const { error } = await signIn(email, password)
-    
+    const { error } = await signIn(email, password);
+
     if (error) {
-      setError(error)
-      setIsLoading(false)
+      setError(error);
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="space-y-6">
+    <div
+      className={`space-y-6 transition-all duration-500 ease-out ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+    >
       {/* Mobile Logo */}
-      <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
+      <Link
+        href="/"
+        className="lg:hidden flex items-center justify-center gap-3 mb-8 hover:opacity-80 transition-opacity cursor-pointer"
+      >
         <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -51,8 +68,9 @@ export default function LoginPage() {
           </svg>
         </div>
         <span className="text-2xl font-bold text-foreground">Onboardly</span>
-      </div>
+      </Link>
 
+      {/* Login Card */}
       <Card className="border-0 shadow-lg">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
@@ -67,7 +85,7 @@ export default function LoginPage() {
                 {error}
               </div>
             )}
-            
+
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>
               <Input
@@ -80,12 +98,12 @@ export default function LoginPage() {
                 autoComplete="email"
               />
             </div>
-            
+
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password">Password</Label>
-                <Link 
-                  href="/auth/forgot-password" 
+                <Link
+                  href="/auth/forgot-password"
                   className="text-sm text-primary hover:underline"
                 >
                   Forgot password?
@@ -109,7 +127,7 @@ export default function LoginPage() {
                   Signing in...
                 </>
               ) : (
-                'Sign in'
+                "Sign in"
               )}
             </Button>
           </form>
@@ -125,24 +143,12 @@ export default function LoginPage() {
               </span>
             </div>
           </div>
-          <Link href="/auth/signup" className="w-full">
-            <Button variant="outline" className="w-full">
-              Create an account
-            </Button>
-          </Link>
+
+          <Button asChild variant="outline" className="w-full">
+            <Link href="/auth/signup">Create an account</Link>
+          </Button>
         </CardFooter>
       </Card>
-
-      <p className="text-center text-sm text-muted-foreground">
-        By signing in, you agree to our{' '}
-        <Link href="/terms" className="text-primary hover:underline">
-          Terms of Service
-        </Link>{' '}
-        and{' '}
-        <Link href="/privacy" className="text-primary hover:underline">
-          Privacy Policy
-        </Link>
-      </p>
     </div>
-  )
+  );
 }

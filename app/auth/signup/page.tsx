@@ -1,68 +1,84 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useAuth } from '@/lib/providers'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
-import { Spinner } from '@/components/ui/spinner'
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/lib/providers";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function SignUpPage() {
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    fullName: '',
-    companyName: '',
-  })
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const { signUp } = useAuth()
-  const router = useRouter()
+    email: "",
+    password: "",
+    confirmPassword: "",
+    fullName: "",
+    companyName: "",
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const { signUp } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
-    }))
-  }
+      [e.target.name]: e.target.value,
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
+    e.preventDefault();
+    setError(null);
 
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match')
-      return
+      setError("Passwords do not match");
+      return;
     }
 
     if (formData.password.length < 8) {
-      setError('Password must be at least 8 characters')
-      return
+      setError("Password must be at least 8 characters");
+      return;
     }
 
-    setIsLoading(true)
+    setIsLoading(true);
 
     const { error } = await signUp(formData.email, formData.password, {
       full_name: formData.fullName,
       company_name: formData.companyName,
-    })
-    
+    });
+
     if (error) {
-      setError(error)
-      setIsLoading(false)
+      setError(error);
+      setIsLoading(false);
     } else {
-      router.push('/auth/signup-success')
+      router.push("/auth/signup-success");
     }
-  }
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Mobile Logo */}
-      <div className="lg:hidden flex items-center justify-center gap-3 mb-8">
+    <div
+      className={`space-y-6 transition-all duration-500 ease-out ${mounted ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4"}`}
+    >
+      <Link
+        href="/"
+        className="lg:hidden flex items-center justify-center gap-3 mb-8 hover:opacity-80 transition-opacity cursor-pointer"
+      >
         <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -81,11 +97,13 @@ export default function SignUpPage() {
           </svg>
         </div>
         <span className="text-2xl font-bold text-foreground">Onboardly</span>
-      </div>
+      </Link>
 
       <Card className="border-0 shadow-lg">
         <CardHeader className="space-y-1">
-          <CardTitle className="text-2xl font-bold">Create your account</CardTitle>
+          <CardTitle className="text-2xl font-bold">
+            Create your account
+          </CardTitle>
           <CardDescription>
             Start your 14-day free trial. No credit card required.
           </CardDescription>
@@ -97,7 +115,7 @@ export default function SignUpPage() {
                 {error}
               </div>
             )}
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="fullName">Full Name</Label>
@@ -125,7 +143,7 @@ export default function SignUpPage() {
                 />
               </div>
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="email">Work Email</Label>
               <Input
@@ -139,7 +157,7 @@ export default function SignUpPage() {
                 autoComplete="email"
               />
             </div>
-            
+
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
@@ -175,7 +193,7 @@ export default function SignUpPage() {
                   Creating account...
                 </>
               ) : (
-                'Create account'
+                "Create account"
               )}
             </Button>
           </form>
@@ -191,24 +209,11 @@ export default function SignUpPage() {
               </span>
             </div>
           </div>
-          <Link href="/auth/login" className="w-full">
-            <Button variant="outline" className="w-full">
-              Sign in instead
-            </Button>
-          </Link>
+          <Button asChild variant="outline" className="w-full">
+            <Link href="/auth/login">Sign in instead</Link>
+          </Button>
         </CardFooter>
       </Card>
-
-      <p className="text-center text-sm text-muted-foreground">
-        By creating an account, you agree to our{' '}
-        <Link href="/terms" className="text-primary hover:underline">
-          Terms of Service
-        </Link>{' '}
-        and{' '}
-        <Link href="/privacy" className="text-primary hover:underline">
-          Privacy Policy
-        </Link>
-      </p>
     </div>
-  )
+  );
 }

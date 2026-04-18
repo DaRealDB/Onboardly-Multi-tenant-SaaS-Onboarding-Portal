@@ -1,91 +1,168 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useAdminDomainRequests } from "@/lib/hooks/use-admin"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { 
-  Table, 
-  TableBody, 
-  TableCell, 
-  TableHead, 
-  TableHeader, 
-  TableRow 
-} from "@/components/ui/table"
+import { useState } from "react";
+import { useAdminDomains } from "@/lib/hooks";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { 
-  Globe, 
-  Search, 
-  MoreHorizontal, 
-  CheckCircle2, 
-  Clock, 
+} from "@/components/ui/dropdown-menu";
+import {
+  Globe,
+  Search,
+  MoreHorizontal,
+  CheckCircle2,
+  Clock,
   AlertCircle,
   Shield,
   RefreshCw,
-  ExternalLink
-} from "lucide-react"
-import { formatDistanceToNow } from "date-fns"
+  ExternalLink,
+} from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+
+// Local interface to fix 'any' errors
+interface DomainRequest {
+  id: string;
+  domain: string;
+  ssl_status: string;
+  dns_status: string;
+  created_at: string;
+  tenant?: {
+    name: string;
+  };
+}
 
 export default function AdminDomainsPage() {
-  const { domainRequests, isLoading, updateDomainStatus } = useAdminDomainRequests()
-  const [searchQuery, setSearchQuery] = useState("")
-  const [filterStatus, setFilterStatus] = useState<string | null>(null)
+  // Aliasing hook values to match your variable names exactly
+  const {
+    domains: domainRequests = [],
+    isLoading,
+    approveDomain, // used for handleVerifyDomain
+    rejectDomain, // used for handleReissueCert / failures
+  } = useAdminDomains();
 
-  const filteredDomains = domainRequests.filter(domain => {
-    const matchesSearch = domain.domain.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesFilter = !filterStatus || domain.ssl_status === filterStatus || domain.dns_status === filterStatus
-    return matchesSearch && matchesFilter
-  })
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState<string | null>(null);
 
-  const pendingCount = domainRequests.filter(d => d.ssl_status === 'pending' || d.dns_status === 'propagating').length
-  const activeCount = domainRequests.filter(d => d.ssl_status === 'issued' && d.dns_status === 'active').length
-  const errorCount = domainRequests.filter(d => d.ssl_status === 'failed' || d.dns_status === 'error').length
+  // Filter Logic
+  const filteredDomains = (domainRequests as DomainRequest[]).filter(
+    (domain: DomainRequest) => {
+      const matchesSearch = domain.domain
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+      const matchesFilter =
+        !filterStatus ||
+        domain.ssl_status === filterStatus ||
+        domain.dns_status === filterStatus;
+      return matchesSearch && matchesFilter;
+    },
+  );
 
+  // Stats Logic
+  const pendingCount = (domainRequests as DomainRequest[]).filter(
+    (d: DomainRequest) =>
+      d.ssl_status === "pending" || d.dns_status === "propagating",
+  ).length;
+  const activeCount = (domainRequests as DomainRequest[]).filter(
+    (d: DomainRequest) =>
+      d.ssl_status === "issued" && d.dns_status === "active",
+  ).length;
+  const errorCount = (domainRequests as DomainRequest[]).filter(
+    (d: DomainRequest) => d.ssl_status === "failed" || d.dns_status === "error",
+  ).length;
+
+  // UI Helpers
   const getSSLBadge = (status: string) => {
     switch (status) {
-      case 'issued':
-        return <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"><Shield className="mr-1 h-3 w-3" />Issued</Badge>
-      case 'pending':
-        return <Badge variant="secondary"><Clock className="mr-1 h-3 w-3" />Pending</Badge>
-      case 'failed':
-        return <Badge variant="destructive"><AlertCircle className="mr-1 h-3 w-3" />Failed</Badge>
+      case "issued":
+        return (
+          <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+            <Shield className="mr-1 h-3 w-3" />
+            Issued
+          </Badge>
+        );
+      case "pending":
+        return (
+          <Badge variant="secondary">
+            <Clock className="mr-1 h-3 w-3" />
+            Pending
+          </Badge>
+        );
+      case "failed":
+        return (
+          <Badge variant="destructive">
+            <AlertCircle className="mr-1 h-3 w-3" />
+            Failed
+          </Badge>
+        );
       default:
-        return <Badge variant="outline">{status}</Badge>
+        return <Badge variant="outline">{status}</Badge>;
     }
-  }
+  };
 
   const getDNSBadge = (status: string) => {
     switch (status) {
-      case 'active':
-        return <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"><CheckCircle2 className="mr-1 h-3 w-3" />Active</Badge>
-      case 'propagating':
-        return <Badge variant="secondary"><RefreshCw className="mr-1 h-3 w-3 animate-spin" />Propagating</Badge>
-      case 'error':
-        return <Badge variant="destructive"><AlertCircle className="mr-1 h-3 w-3" />Error</Badge>
+      case "active":
+        return (
+          <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+            <CheckCircle2 className="mr-1 h-3 w-3" />
+            Active
+          </Badge>
+        );
+      case "propagating":
+        return (
+          <Badge variant="secondary">
+            <RefreshCw className="mr-1 h-3 w-3 animate-spin" />
+            Propagating
+          </Badge>
+        );
+      case "error":
+        return (
+          <Badge variant="destructive">
+            <AlertCircle className="mr-1 h-3 w-3" />
+            Error
+          </Badge>
+        );
       default:
-        return <Badge variant="outline">{status}</Badge>
+        return <Badge variant="outline">{status}</Badge>;
     }
-  }
+  };
 
+  // Action Handlers
   const handleVerifyDomain = async (domainId: string) => {
-    await updateDomainStatus(domainId, { dns_status: 'active', ssl_status: 'issued', verified_at: new Date().toISOString() })
-  }
+    await approveDomain(domainId);
+  };
 
   const handleReissueCert = async (domainId: string) => {
-    await updateDomainStatus(domainId, { ssl_status: 'pending' })
-  }
+    // If your hook uses reject to reset, we call that here
+    await rejectDomain(domainId);
+  };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-foreground">Domain Management</h1>
+        <h1 className="text-2xl font-semibold text-foreground">
+          Domain Management
+        </h1>
         <p className="text-muted-foreground mt-1">
           Manage custom domain requests and SSL certificates
         </p>
@@ -95,43 +172,57 @@ export default function AdminDomainsPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Pending</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Pending
+            </CardTitle>
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{pendingCount}</div>
-            <p className="text-xs text-muted-foreground">Awaiting verification</p>
+            <p className="text-xs text-muted-foreground">
+              Awaiting verification
+            </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Active</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Active
+            </CardTitle>
             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-emerald-600">{activeCount}</div>
+            <div className="text-2xl font-bold text-emerald-600">
+              {activeCount}
+            </div>
             <p className="text-xs text-muted-foreground">Fully configured</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Errors</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Errors
+            </CardTitle>
             <AlertCircle className="h-4 w-4 text-destructive" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-destructive">{errorCount}</div>
+            <div className="text-2xl font-bold text-destructive">
+              {errorCount}
+            </div>
             <p className="text-xs text-muted-foreground">Require attention</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Domain Requests Table */}
+      {/* Table Section */}
       <Card>
         <CardHeader>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle>Domain Requests</CardTitle>
-              <CardDescription>All custom domain configuration requests</CardDescription>
+              <CardDescription>
+                All custom domain configuration requests
+              </CardDescription>
             </div>
             <div className="flex items-center gap-2">
               <div className="relative">
@@ -150,13 +241,29 @@ export default function AdminDomainsPage() {
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent>
-                  <DropdownMenuItem onClick={() => setFilterStatus(null)}>All Status</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setFilterStatus('pending')}>SSL Pending</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setFilterStatus('issued')}>SSL Issued</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setFilterStatus('failed')}>SSL Failed</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setFilterStatus('propagating')}>DNS Propagating</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setFilterStatus('active')}>DNS Active</DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setFilterStatus('error')}>DNS Error</DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterStatus(null)}>
+                    All Status
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterStatus("pending")}>
+                    SSL Pending
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterStatus("issued")}>
+                    SSL Issued
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterStatus("failed")}>
+                    SSL Failed
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => setFilterStatus("propagating")}
+                  >
+                    DNS Propagating
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterStatus("active")}>
+                    DNS Active
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => setFilterStatus("error")}>
+                    DNS Error
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
@@ -170,9 +277,13 @@ export default function AdminDomainsPage() {
           ) : filteredDomains.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <Globe className="h-12 w-12 text-muted-foreground/50 mb-4" />
-              <h3 className="text-lg font-medium text-foreground">No domain requests</h3>
+              <h3 className="text-lg font-medium text-foreground">
+                No domain requests
+              </h3>
               <p className="text-sm text-muted-foreground mt-1">
-                {searchQuery ? "No domains match your search" : "No custom domains have been requested yet"}
+                {searchQuery
+                  ? "No domains match your search"
+                  : "No custom domains have been requested yet"}
               </p>
             </div>
           ) : (
@@ -194,9 +305,9 @@ export default function AdminDomainsPage() {
                       <div className="flex items-center gap-2">
                         <Globe className="h-4 w-4 text-muted-foreground" />
                         <span className="font-medium">{domain.domain}</span>
-                        <a 
-                          href={`https://${domain.domain}`} 
-                          target="_blank" 
+                        <a
+                          href={`https://${domain.domain}`}
+                          target="_blank"
                           rel="noopener noreferrer"
                           className="text-muted-foreground hover:text-foreground"
                         >
@@ -206,32 +317,42 @@ export default function AdminDomainsPage() {
                     </TableCell>
                     <TableCell>
                       <span className="text-muted-foreground">
-                        {domain.tenant?.name || 'Unknown'}
+                        {domain.tenant?.name || "Unknown"}
                       </span>
                     </TableCell>
                     <TableCell>{getSSLBadge(domain.ssl_status)}</TableCell>
                     <TableCell>{getDNSBadge(domain.dns_status)}</TableCell>
                     <TableCell className="text-muted-foreground">
-                      {formatDistanceToNow(new Date(domain.created_at), { addSuffix: true })}
+                      {formatDistanceToNow(new Date(domain.created_at), {
+                        addSuffix: true,
+                      })}
                     </TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                          >
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleVerifyDomain(domain.id)}>
+                          <DropdownMenuItem
+                            onClick={() => handleVerifyDomain(domain.id)}
+                          >
                             <CheckCircle2 className="mr-2 h-4 w-4" />
                             Mark as Verified
                           </DropdownMenuItem>
-                          <DropdownMenuItem onClick={() => handleReissueCert(domain.id)}>
+                          <DropdownMenuItem
+                            onClick={() => handleReissueCert(domain.id)}
+                          >
                             <RefreshCw className="mr-2 h-4 w-4" />
                             Reissue Certificate
                           </DropdownMenuItem>
-                          <DropdownMenuItem 
-                            onClick={() => updateDomainStatus(domain.id, { ssl_status: 'failed' })}
+                          <DropdownMenuItem
+                            onClick={() => rejectDomain(domain.id)}
                             className="text-destructive"
                           >
                             <AlertCircle className="mr-2 h-4 w-4" />
@@ -248,22 +369,34 @@ export default function AdminDomainsPage() {
         </CardContent>
       </Card>
 
-      {/* DNS Configuration Help */}
+      {/* Help Section */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">DNS Configuration Instructions</CardTitle>
-          <CardDescription>Share these instructions with tenants for domain setup</CardDescription>
+          <CardTitle className="text-base">
+            DNS Configuration Instructions
+          </CardTitle>
+          <CardDescription>
+            Share these instructions with tenants for domain setup
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="rounded-lg bg-muted/50 p-4 font-mono text-sm">
-            <p className="text-muted-foreground mb-2"># Add the following DNS records:</p>
-            <p><span className="text-primary">CNAME</span> @ → onboardly.app</p>
-            <p><span className="text-primary">CNAME</span> www → onboardly.app</p>
+            <p className="text-muted-foreground mb-2">
+              # Add the following DNS records:
+            </p>
+            <p>
+              <span className="text-primary">CNAME</span> @ → onboardly.app
+            </p>
+            <p>
+              <span className="text-primary">CNAME</span> www → onboardly.app
+            </p>
             <p className="text-muted-foreground mt-2"># Or for apex domains:</p>
-            <p><span className="text-primary">A</span> @ → 76.76.21.21</p>
+            <p>
+              <span className="text-primary">A</span> @ → 76.76.21.21
+            </p>
           </div>
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

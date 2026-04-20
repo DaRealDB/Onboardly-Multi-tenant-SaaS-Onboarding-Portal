@@ -67,7 +67,8 @@ export default function SignUpPage() {
       setError(error);
       setIsLoading(false);
     } else {
-      router.push("/auth/signup-success");
+      // router.push("/auth/signup-success");
+      router.push("/auth/login");
     }
   };
 
@@ -98,7 +99,6 @@ export default function SignUpPage() {
         </div>
         <span className="text-2xl font-bold text-foreground">Onboardly</span>
       </Link>
-
       <Card className="border-0 shadow-lg">
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold">
